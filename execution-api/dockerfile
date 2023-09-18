@@ -1,0 +1,24 @@
+FROM golang:latest as builder
+WORKDIR /app
+COPY . /app
+
+RUN apt-get update
+RUN apt-get upgrade
+RUN apt-get install build-essential pkg-config git
+
+# Kafka Go client is based on the C library librdkafka
+ENV CGO_ENABLED 1
+ENV GOFLAGS -mod=vendor
+ENV GOOS=linux
+ENV GOARCH=arm64
+
+RUN go mod vendor
+RUN export GO111MODULE=on
+
+
+RUN go build -tags musl -ldflags "-s -w" -o /app/executable .
+
+
+FROM alpine as runner
+COPY --from=builder /app/executable .
+ENTRYPOINT ["./execution"]

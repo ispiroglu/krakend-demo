@@ -1,0 +1,64 @@
+{
+  "$schema": "https://www.krakend.io/schema/krakend.json",
+  "version": 3,
+  "name": "KrakenD - API Gateway",
+  "host": ["http://localhost:8000"],
+  "extra_config": {
+    "telemetry/logging": {
+      "level": "DEBUG",
+      "prefix": "[KRAKEND]",
+      "syslog": false,
+      "stdout": true,
+      "format": "logstash",
+      "syslog_facility": "local3"
+    },
+    "telemetry/metrics": {
+      "collection_time": "60s",
+      "proxy_disabled": false,
+      "router_disabled": false,
+      "backend_disabled": false,
+      "endpoint_disabled": false,
+      "listen_address": ":8090"
+    }
+  },
+  "timeout": "3000ms",
+  "cache_ttl": "3000s",
+  "output_encoding": "json",
+  "port": 8000,
+  "plugin": {
+    "pattern": ".so",
+    "folder": "./"
+  },
+  "extra_config": {
+    "plugin/http-server": {
+      "name": ["krakend-kafka"],
+      "krakend-server-example": {
+        "path": "/hijack-me"
+      }
+    }
+  },
+  "endpoints": [
+    {
+      "endpoint": "/api/transaction",
+      "method": "POST",
+      "output_encoding": "json",
+      "backend": [
+        {
+          "url_pattern": "/",
+          "encoding": "json",
+          "sd": "static",
+          "method": "POST",
+          "extra_config": {
+            "backend/pubsub/publisher": {
+              "topic_url": "transaction"
+            }
+          },
+          "disable_host_sanitize": true,
+          "host": [
+            "kafka://"
+          ]
+        }
+      ]
+    }
+  ]
+}
